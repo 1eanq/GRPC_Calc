@@ -33,6 +33,8 @@ type UserProvider interface {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrUserExists         = errors.New("user already exists")
+	ErrUserNotFound       = errors.New("user not found")
 )
 
 // New returns a new interface of the Auth service
@@ -83,11 +85,9 @@ func (a *Auth) Login(
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
-	app := models.App{}
-
 	log.Info("user logined successfilly")
 
-	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	token, err := jwt.NewToken(user, a.tokenTTL)
 	if err != nil {
 		a.log.Error("failed to generate token", err)
 
@@ -97,12 +97,10 @@ func (a *Auth) Login(
 	return token, nil
 }
 
-func (a *Auth) RegisterNewUser(
-	ctx context.Context,
-	email string,
-	password string,
-) (int64, error) {
-	const op = "auth.RegisterNewUser"
+// RegisterNewUser registers new user in the system and returns user ID.
+// If user with given username already exists, returns error.
+func (a *Auth) RegisterNewUser(ctx context.Context, email string, pass string) (int64, error) {
+	const op = "Auth.RegisterNewUser"
 
 	log := a.log.With(
 		slog.String("op", op),
@@ -111,11 +109,11 @@ func (a *Auth) RegisterNewUser(
 
 	log.Info("registering user")
 
-	passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	passHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		log.Error("failed to generate password hash", err)
 
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
@@ -125,8 +123,5 @@ func (a *Auth) RegisterNewUser(
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Info("user registered")
-
 	return id, nil
-
 }

@@ -25,6 +25,7 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+// SaveUser saves user to db.
 func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
 	const op = "storage.sqlite.SaveUser"
 
@@ -36,7 +37,6 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 	res, err := stmt.ExecContext(ctx, email, passHash)
 	if err != nil {
 		var sqliteErr sqlite3.Error
-
 		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 		}
@@ -52,6 +52,7 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 	return id, nil
 }
 
+// User returns user by email.
 func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	const op = "storage.sqlite.User"
 
@@ -71,5 +72,6 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
+
 	return user, nil
 }

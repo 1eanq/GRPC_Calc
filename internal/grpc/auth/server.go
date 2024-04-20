@@ -2,7 +2,6 @@ package auth
 
 import (
 	"GRPC_Calc/internal/services/auth"
-	"GRPC_Calc/internal/storage"
 	genv1 "GRPC_Calc/proto/gen"
 	"context"
 	"errors"
@@ -88,10 +87,10 @@ func (s *serverAPI) Register(
 
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
-
+		if errors.Is(err, auth.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
 		}
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, status.Error(codes.Internal, "failed to register user")
 	}
 
 	return &genv1.RegisterResponse{
