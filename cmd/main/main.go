@@ -1,6 +1,6 @@
 package main
 
-// go run cmd/main.go --config=cmd/config/local.yaml
+// go run cmd/main.go --config=config/local.yaml
 
 import (
 	"GRPC_Calc/internal/app"
@@ -26,9 +26,7 @@ func main() {
 
 	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
 
-	go application.GRPCSrv.MustRun()
-
-	//TODO: запустить grpc-сервер приложения
+	go application.GRPCServer.MustRun()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
@@ -37,7 +35,7 @@ func main() {
 
 	log.Info("stopping application", slog.String("signal", call.String()))
 
-	application.GRPCSrv.Stop()
+	application.GRPCServer.Stop()
 
 	log.Info("application stopped")
 }

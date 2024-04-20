@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"GRPC_Calc/internal/services/auth"
+	"GRPC_Calc/internal/storage"
 	genv1 "GRPC_Calc/proto/gen"
 	"context"
+	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,7 +43,9 @@ func (s *serverAPI) Login(
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		// TODO: ...
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid argument")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -83,7 +88,9 @@ func (s *serverAPI) Register(
 
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		//TODO: ...
+		if errors.Is(err, storage.ErrUserExists) {
+
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 

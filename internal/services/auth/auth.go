@@ -83,13 +83,21 @@ func (a *Auth) Login(
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
+	app := models.App{}
+
 	log.Info("user logined successfilly")
 
-	token, err := jwt.NewToken(user, a.tokenTTL)
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	if err != nil {
+		a.log.Error("failed to generate token", err)
 
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return token, nil
 }
 
-func (a *Auth) RegisterNewUserZ(
+func (a *Auth) RegisterNewUser(
 	ctx context.Context,
 	email string,
 	password string,
