@@ -1,2 +1,3 @@
 # GRPC_Calc
-ауауауа
+## Чтобы запустить:
+```go run cmd/main.go --config=config/local.yaml```
