@@ -15,19 +15,19 @@ var (
 )
 
 func CalculateExpr(expression string) (float64, error) {
-	tokens := tokenize(expression)
-	postfix, err := infixToPostfix(tokens)
+	tokens := Tokenize(expression)
+	postfix, err := InfixToPostfix(tokens)
 	if err != nil {
 		return 0, err
 	}
-	result, err := evaluatePostfix(postfix)
+	result, err := EvaluatePostfix(postfix)
 	if err != nil {
 		return 0, err
 	}
 	return result, nil
 }
 
-func tokenize(expression string) []string {
+func Tokenize(expression string) []string {
 	// Удаляем все пробелы из выражения
 	expression = strings.ReplaceAll(expression, " ", "")
 
@@ -35,7 +35,7 @@ func tokenize(expression string) []string {
 	var buffer strings.Builder
 
 	for _, char := range expression {
-		if isOperator(char) {
+		if IsOperator(char) {
 			// Если встретили оператор, добавляем предыдущее число и оператор в список токенов,
 			// а затем сбрасываем буфер
 			if buffer.Len() > 0 {
@@ -64,7 +64,7 @@ func tokenize(expression string) []string {
 	return tokens
 }
 
-func infixToPostfix(tokens []string) ([]string, error) {
+func InfixToPostfix(tokens []string) ([]string, error) {
 	var postfix []string
 	var stack []string
 
@@ -117,12 +117,12 @@ func infixToPostfix(tokens []string) ([]string, error) {
 	return postfix, nil
 }
 
-func isOperator(char rune) bool {
+func IsOperator(char rune) bool {
 	return char == '+' || char == '-' || char == '*' || char == '/'
 }
 
 // Функция для вычисления выражеия
-func evaluatePostfix(tokens []string) (float64, error) {
+func EvaluatePostfix(tokens []string) (float64, error) {
 	var stack []float64
 
 	for _, token := range tokens {

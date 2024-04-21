@@ -67,15 +67,10 @@ func NewAuth(
 	}
 }
 
-func NewCalc(
-	log *slog.Logger,
-	expressionSaver ExpressionSaver,
-	expressionProvider ExpressionProvider,
-) *Calc {
+// NewCalc returns a new interface of the Calc service
+func NewCalc(log *slog.Logger) *Calc {
 	return &Calc{
-		log:          log,
-		exprSaver:    expressionSaver,
-		exprProvider: expressionProvider,
+		log: log,
 	}
 }
 

@@ -15,6 +15,7 @@ type Suite struct {
 	*testing.T
 	Cfg        *config.Config
 	AuthClient genv1.CalcClient
+	CalcClient genv1.CalcClient
 }
 
 const (

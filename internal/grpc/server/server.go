@@ -5,10 +5,10 @@ import (
 	genv1 "GRPC_Calc/proto/gen"
 	"context"
 	"errors"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 )
 
 type Auth interface {
@@ -113,7 +113,14 @@ func (s *serverAPI) Calculate(
 		return nil, status.Error(codes.Internal, "failed to calculate expression")
 	}
 
+	uid, err := strconv.Atoi(req.Uid)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to convert user id")
+	}
+	expr := req.Expr
 	return &genv1.ExprResponse{
-		Answer: fmt.Sprintf("%f", ans),
+		Answer:     ans,
+		Uid:        int64(uid),
+		Expression: expr,
 	}, nil
 }
