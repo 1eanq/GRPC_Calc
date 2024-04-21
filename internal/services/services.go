@@ -1,7 +1,8 @@
-package auth
+package services
 
 import (
 	"GRPC_Calc/internal/domain/models"
+	"GRPC_Calc/internal/lib/calculator"
 	"GRPC_Calc/internal/lib/jwt"
 	"GRPC_Calc/internal/storage"
 	"context"
@@ -31,14 +32,28 @@ type UserProvider interface {
 	User(ctx context.Context, email string) (models.User, error)
 }
 
+type Calc struct {
+	log          *slog.Logger
+	exprSaver    ExpressionSaver
+	exprProvider ExpressionProvider
+}
+
+type ExpressionSaver interface {
+	SaveExpression(ctx context.Context, expr string, uid int64) (int64, error)
+}
+
+type ExpressionProvider interface {
+	Expression(ctx context.Context, id int64) (models.Expression, error)
+}
+
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUserExists         = errors.New("user already exists")
 	ErrUserNotFound       = errors.New("user not found")
 )
 
-// New returns a new interface of the Auth service
-func New(
+// NewAuth returns a new interface of the Auth service
+func NewAuth(
 	log *slog.Logger,
 	userSaver UserSaver,
 	userProvider UserProvider,
@@ -49,6 +64,18 @@ func New(
 		usrProvider: userProvider,
 		log:         log,
 		tokenTTL:    tokenTTL,
+	}
+}
+
+func NewCalc(
+	log *slog.Logger,
+	expressionSaver ExpressionSaver,
+	expressionProvider ExpressionProvider,
+) *Calc {
+	return &Calc{
+		log:          log,
+		exprSaver:    expressionSaver,
+		exprProvider: expressionProvider,
 	}
 }
 
@@ -71,7 +98,7 @@ func (a *Auth) Login(
 		if errors.Is(err, storage.ErrUserNotFound) {
 			a.log.Warn("user not found", err)
 
-			return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+			return "", fmt.Errorf("%s: %w", op, ErrUserNotFound)
 		}
 
 		a.log.Error("failed to get user", err)
@@ -124,4 +151,26 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, pass string) (
 	}
 
 	return id, nil
+}
+
+// Calculate calculates given expression and returns answer.
+// If expression written in wrong spot, returns error
+func (c *Calc) CalculateExpression(ctx context.Context, expr string) (string, error) {
+	const op = "Auth.Calculate"
+
+	log := c.log.With(
+		slog.String("op", op),
+		slog.String("expression", expr),
+	)
+
+	log.Info("calculating expression")
+
+	res, err := calculator.CalculateExpr(expr)
+	if err != nil {
+		log.Error("failed to calculate expression", err)
+
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return fmt.Sprintf("%f", res), nil
 }

@@ -1,7 +1,7 @@
 package grpcapp
 
 import (
-	authgrpc "GRPC_Calc/internal/grpc/auth"
+	server "GRPC_Calc/internal/grpc/server"
 	"fmt"
 	"google.golang.org/grpc"
 	"log/slog"
@@ -16,11 +16,12 @@ type App struct {
 
 func New(
 	log *slog.Logger,
-	authService authgrpc.Auth,
+	authService server.Auth,
+	calcService server.Calc,
 	port int,
 ) *App {
 	gRPCServer := grpc.NewServer()
-	authgrpc.Register(gRPCServer, authService)
+	server.Register(gRPCServer, authService, calcService)
 
 	return &App{
 		log:        log,
@@ -35,6 +36,7 @@ func (a *App) MustRun() {
 	}
 }
 
+// Run runs gRPC server.
 func (a *App) Run() error {
 	const op = "grpcapp.Run"
 

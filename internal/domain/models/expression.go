@@ -1,6 +1,8 @@
 package models
 
 type Expression struct {
-	Expr string
-	uid  int64
+	ID     int64
+	Expr   string
+	Answer string
+	UID    int64
 }

@@ -79,3 +79,54 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 
 	return user, nil
 }
+
+// SaveExpression saves expression to db.
+func (s *Storage) SaveExpression(ctx context.Context, expr string, answer string, uid int64) (int64, error) {
+	const op = "storage.sqlite.SaveExpression"
+
+	stmt, err := s.db.Prepare("INSERT INTO expressions(expression, answer, uid) VALUES(?, ?, ?)")
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := stmt.ExecContext(ctx, expr, answer, uid)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return 0, fmt.Errorf("%s: %w", op, storage.ErrExpressionExists)
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
+}
+
+// Expression returns expression by id.
+func (s *Storage) Expression(ctx context.Context, id int64) (models.Expression, error) {
+	const op = "storage.sqlite.Expression"
+
+	stmt, err := s.db.Prepare("SELECT id, expression, answer, uid FROM expressions WHERE id = ?")
+	if err != nil {
+		return models.Expression{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	row := stmt.QueryRowContext(ctx, id)
+
+	var expression models.Expression
+	err = row.Scan(&expression.ID, &expression.Expr, &expression.Answer, &expression.UID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.Expression{}, fmt.Errorf("%s: %w", op, storage.ErrExpressionNotFound)
+		}
+
+		return models.Expression{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return expression, nil
+}

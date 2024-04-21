@@ -1,10 +1,11 @@
-package auth
+package server
 
 import (
-	"GRPC_Calc/internal/services/auth"
+	"GRPC_Calc/internal/services"
 	genv1 "GRPC_Calc/proto/gen"
 	"context"
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,13 +23,18 @@ type Auth interface {
 	) (userID int64, err error)
 }
 
+type Calc interface {
+	CalculateExpression(ctx context.Context, expr string) (answer string, err error)
+}
+
 type serverAPI struct {
 	genv1.UnimplementedCalcServer
 	auth Auth
+	calc Calc
 }
 
-func Register(gRPC *grpc.Server, auth Auth) {
-	genv1.RegisterCalcServer(gRPC, &serverAPI{auth: auth})
+func Register(gRPC *grpc.Server, auth Auth, calc Calc) {
+	genv1.RegisterCalcServer(gRPC, &serverAPI{auth: auth, calc: calc})
 }
 
 func (s *serverAPI) Login(
@@ -42,7 +48,7 @@ func (s *serverAPI) Login(
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
+		if errors.Is(err, services.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid argument")
 		}
 		return nil, status.Error(codes.Internal, "internal error")
@@ -87,7 +93,7 @@ func (s *serverAPI) Register(
 
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, auth.ErrUserExists) {
+		if errors.Is(err, services.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
 		}
 		return nil, status.Error(codes.Internal, "failed to register user")
@@ -95,5 +101,19 @@ func (s *serverAPI) Register(
 
 	return &genv1.RegisterResponse{
 		UserId: userID,
+	}, nil
+}
+
+func (s *serverAPI) Calculate(
+	ctx context.Context,
+	req *genv1.ExprRequest,
+) (*genv1.ExprResponse, error) {
+	ans, err := s.calc.CalculateExpression(ctx, req.GetExpr())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to calculate expression")
+	}
+
+	return &genv1.ExprResponse{
+		Answer: fmt.Sprintf("%f", ans),
 	}, nil
 }
