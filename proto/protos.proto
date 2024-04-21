@@ -7,6 +7,7 @@ option go_package = "proto/gen;genv1";
 service Calc {
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Calculate (ExprRequest) returns (ExprResponse);
 }
 
 message RegisterRequest {
@@ -25,4 +26,13 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1; // Auth token of the logged in user.
+}
+
+message ExprRequest {
+  string expr = 1; // Expression of the user.
+  string uid = 2; // Id of the user.
+}
+
+message ExprResponse {
+  int64 id = 1; // Id of the expression.
 }

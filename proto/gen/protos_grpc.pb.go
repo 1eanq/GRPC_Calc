@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type CalcClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	Calculate(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*ExprResponse, error)
 }
 
 type calcClient struct {
@@ -52,12 +53,22 @@ func (c *calcClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *calcClient) Calculate(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*ExprResponse, error) {
+	out := new(ExprResponse)
+	err := c.cc.Invoke(ctx, "/Calc.Calc/Calculate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalcServer is the server API for Calc service.
 // All implementations must embed UnimplementedCalcServer
 // for forward compatibility
 type CalcServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	Calculate(context.Context, *ExprRequest) (*ExprResponse, error)
 	mustEmbedUnimplementedCalcServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedCalcServer) Register(context.Context, *RegisterRequest) (*Reg
 }
 func (UnimplementedCalcServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedCalcServer) Calculate(context.Context, *ExprRequest) (*ExprResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
 }
 func (UnimplementedCalcServer) mustEmbedUnimplementedCalcServer() {}
 
@@ -120,6 +134,24 @@ func _Calc_Login_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Calc_Calculate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExprRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalcServer).Calculate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Calc.Calc/Calculate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalcServer).Calculate(ctx, req.(*ExprRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Calc_ServiceDesc is the grpc.ServiceDesc for Calc service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var Calc_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _Calc_Login_Handler,
+		},
+		{
+			MethodName: "Calculate",
+			Handler:    _Calc_Calculate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
