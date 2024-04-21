@@ -1,0 +1,6 @@
+env: "local" # dev, prod
+storage_path: "./storage/database.db"
+token_ttl: 1h
+grpc:
+  port: 8080
+  timeout: 24h
