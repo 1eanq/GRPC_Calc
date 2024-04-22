@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS expressions
 (
     id        INTEGER PRIMARY KEY,
-    expression     TEXT NOT NULL UNIQUE,
+    expression     TEXT,
     answer TEXT,
-    uid INTEGER
+    uid TEXT
 );
 

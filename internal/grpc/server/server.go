@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 )
 
 type Auth interface {
@@ -24,7 +23,7 @@ type Auth interface {
 }
 
 type Calc interface {
-	CalculateExpression(ctx context.Context, expr string) (answer string, err error)
+	CalculateExpression(ctx context.Context, expr, uid string) (id int64, err error)
 }
 
 type serverAPI struct {
@@ -108,19 +107,12 @@ func (s *serverAPI) Calculate(
 	ctx context.Context,
 	req *genv1.ExprRequest,
 ) (*genv1.ExprResponse, error) {
-	ans, err := s.calc.CalculateExpression(ctx, req.GetExpr())
+	id, err := s.calc.CalculateExpression(ctx, req.GetExpr(), req.GetUid())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to calculate expression")
 	}
 
-	uid, err := strconv.Atoi(req.Uid)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to convert user id")
-	}
-	expr := req.Expr
 	return &genv1.ExprResponse{
-		Answer:     ans,
-		Uid:        int64(uid),
-		Expression: expr,
+		Id: id,
 	}, nil
 }

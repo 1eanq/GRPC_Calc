@@ -81,7 +81,7 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 }
 
 // SaveExpression saves expression to db.
-func (s *Storage) SaveExpression(ctx context.Context, expr string, answer string, uid int64) (int64, error) {
+func (s *Storage) SaveExpression(ctx context.Context, expr, answer, uid string) (int64, error) {
 	const op = "storage.sqlite.SaveExpression"
 
 	stmt, err := s.db.Prepare("INSERT INTO expressions(expression, answer, uid) VALUES(?, ?, ?)")
@@ -92,10 +92,11 @@ func (s *Storage) SaveExpression(ctx context.Context, expr string, answer string
 	res, err := stmt.ExecContext(ctx, expr, answer, uid)
 	if err != nil {
 		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-			return 0, fmt.Errorf("%s: %w", op, storage.ErrExpressionExists)
+		if errors.As(err, &sqliteErr) {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return 0, fmt.Errorf("%s: %w", op, storage.ErrExpressionExists)
+			}
 		}
-
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 

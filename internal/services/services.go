@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
+	"strconv"
 	"time"
 )
 
@@ -39,7 +40,7 @@ type Calc struct {
 }
 
 type ExpressionSaver interface {
-	SaveExpression(ctx context.Context, expr string, uid int64) (int64, error)
+	SaveExpression(ctx context.Context, expr, answer, uid string) (int64, error)
 }
 
 type ExpressionProvider interface {
@@ -67,13 +68,19 @@ func NewAuth(
 	}
 }
 
-// NewCalc returns a new interface of the Calc service
-func NewCalc(log *slog.Logger) *Calc {
+// NewCalc returns a new interface of the Calc service.
+func NewCalc(log *slog.Logger, exprSaver ExpressionSaver, exprProvider ExpressionProvider) *Calc {
 	return &Calc{
-		log: log,
+		log:          log,
+		exprSaver:    exprSaver,
+		exprProvider: exprProvider,
 	}
 }
 
+// Login logins users and returns jwt token.
+// If email not exists returns ErrUserNotFound.
+// If password is wrong returns ErrInvalidCredentials.
+// In other cases returns error.
 func (a *Auth) Login(
 	ctx context.Context,
 	email string,
@@ -102,12 +109,12 @@ func (a *Auth) Login(
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
-		a.log.Info("invalid credenticals", err)
+		a.log.Info("invalid credentials", err)
 
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
-	log.Info("user logined successfilly")
+	log.Info("user login successfully")
 
 	token, err := jwt.NewToken(user, a.tokenTTL)
 	if err != nil {
@@ -148,10 +155,10 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, pass string) (
 	return id, nil
 }
 
-// Calculate calculates given expression and returns answer.
+// CalculateExpression calculates given expression and returns expression id.
 // If expression written in wrong spot, returns error
-func (c *Calc) CalculateExpression(ctx context.Context, expr string) (string, error) {
-	const op = "Auth.Calculate"
+func (c *Calc) CalculateExpression(ctx context.Context, expr, uid string) (int64, error) {
+	const op = "Auth.CalculateExpression"
 
 	log := c.log.With(
 		slog.String("op", op),
@@ -160,12 +167,21 @@ func (c *Calc) CalculateExpression(ctx context.Context, expr string) (string, er
 
 	log.Info("calculating expression")
 
-	res, err := calculator.CalculateExpr(expr)
+	answer, err := calculator.CalculateExpr(expr)
 	if err != nil {
 		log.Error("failed to calculate expression", err)
 
-		return "", fmt.Errorf("%s: %w", op, err)
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	ans := strconv.FormatFloat(answer, 'f', -1, 64)
+	id, err := c.exprSaver.SaveExpression(ctx, expr, ans, uid)
+	if err != nil {
+		log.Error("failed to save expression", err)
+
+		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return fmt.Sprintf("%f", res), nil
+	log.Info("calculated expression successfully", id)
+
+	return id, nil
 }

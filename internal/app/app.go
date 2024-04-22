@@ -25,7 +25,7 @@ func New(
 
 	authService := services.NewAuth(log, storage, storage, tokenTTL)
 
-	calcService := services.NewCalc(log)
+	calcService := services.NewCalc(log, storage, storage)
 
 	grpcApp := grpcapp.New(log, authService, calcService, grpcPort)
 

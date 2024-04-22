@@ -35,7 +35,4 @@ message ExprRequest {
 
 message ExprResponse {
   int64 id = 1; // Id of the expression.
-  string expression = 2;
-  string answer = 3;
-  int64 uid = 4;
 }
