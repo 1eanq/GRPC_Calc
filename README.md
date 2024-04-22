@@ -11,5 +11,7 @@
 
 ## Как все работает
 Для регистрации /register {email: , password: } в ответ user_id
+
 Для логина /login {email: , password: } в ответ jwt-token
+
 Для вычислений /calculate {expr: , uid: } в ответ id вычисления **Не реализовано до конца**
