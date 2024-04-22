@@ -1,4 +1,5 @@
 # GRPC_Calc
+### tg @leanq_ha
 ## Чтобы запустить:
 ```go run cmd/main.go --config=config/local.yaml```
 
